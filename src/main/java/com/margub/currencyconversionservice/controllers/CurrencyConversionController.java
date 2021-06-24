@@ -30,11 +30,7 @@ public class CurrencyConversionController {
         uriVariables.put("from", from);
         uriVariables.put("to", to);
         // Calling the currency exchange service
-        ResponseEntity<CurrencyConverterBean> responseEntity =
-                new RestTemplate().getForEntity(
-                        CURRENCY_EXCHANGE_SERVICE_URL,
-                        CurrencyConverterBean.class,
-                        uriVariables);
+        ResponseEntity<CurrencyConverterBean> responseEntity = getExchangeValueDetailsFromCurrencyExchangeService(uriVariables);
         CurrencyConverterBean response = responseEntity.getBody();
 
         return new CurrencyConverterBean(
@@ -44,6 +40,18 @@ public class CurrencyConversionController {
                 response.getConversionMultiple(),
                 quantity,
                 quantity.multiply(response.getConversionMultiple()), response.getPort());
+    }
+
+    private ResponseEntity<CurrencyConverterBean> getExchangeValueDetailsFromCurrencyExchangeService(Map<String, String> uriVariables) {
+       // To use RestTemplate or use Open Feign
+        return new RestTemplate().getForEntity(
+                CURRENCY_EXCHANGE_SERVICE_URL,
+                CurrencyConverterBean.class,
+                uriVariables);
+
+        //How to USE open feign; Required deps: spring-cloud-starter-openfeign
+
+
     }
 
 }
