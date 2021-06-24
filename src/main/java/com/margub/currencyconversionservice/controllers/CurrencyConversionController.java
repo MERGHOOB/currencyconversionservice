@@ -1,6 +1,8 @@
 package com.margub.currencyconversionservice.controllers;
 
 import com.margub.currencyconversionservice.beans.CurrencyConverterBean;
+import com.margub.currencyconversionservice.feign.CurrencyExchangeServiceProxy;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +16,9 @@ import java.util.Map;
 @RestController
 public class CurrencyConversionController {
 
+    @Autowired
+    private CurrencyExchangeServiceProxy exchangeServiceProxy;
+
     public static final String CURRENCY_EXCHANGE_SERVICE_URL = "http://localhost:8000/currency-exchange/from/{from}/to/{to}";
 
     @GetMapping("/currency-converter/from/{from}/to/{to}/quantity/{quantity}")
@@ -25,13 +30,11 @@ public class CurrencyConversionController {
 //                quantity,
 //                quantity, 0);
 
+        // using Feign Service
+        CurrencyConverterBean response = contactExchangeServiceProxyWhichIsFeignClient(from, to);
+            //              OR
         // Use of currency exchange service to get conversionMultiple
-        Map<String, String> uriVariables = new HashMap<>();
-        uriVariables.put("from", from);
-        uriVariables.put("to", to);
-        // Calling the currency exchange service
-        ResponseEntity<CurrencyConverterBean> responseEntity = getExchangeValueDetailsFromCurrencyExchangeService(uriVariables);
-        CurrencyConverterBean response = responseEntity.getBody();
+//        CurrencyConverterBean response = contactExchangeServiceToGetExchangeValueUsingRESTTEMPLATE(from, to);
 
         return new CurrencyConverterBean(
                 response.getId(),
@@ -42,16 +45,21 @@ public class CurrencyConversionController {
                 quantity.multiply(response.getConversionMultiple()), response.getPort());
     }
 
-    private ResponseEntity<CurrencyConverterBean> getExchangeValueDetailsFromCurrencyExchangeService(Map<String, String> uriVariables) {
-       // To use RestTemplate or use Open Feign
-        return new RestTemplate().getForEntity(
+    private CurrencyConverterBean contactExchangeServiceProxyWhichIsFeignClient(String from, String to) {
+        return exchangeServiceProxy.convertCurrencyFeign(from, to);
+    }
+
+    private CurrencyConverterBean contactExchangeServiceToGetExchangeValueUsingRESTTEMPLATE(String from, String to) {
+        Map<String, String> uriVariables = new HashMap<>();
+        uriVariables.put("from", from);
+        uriVariables.put("to", to);
+        // Calling the currency exchange service
+        ResponseEntity<CurrencyConverterBean> responseEntity = new RestTemplate().getForEntity(
                 CURRENCY_EXCHANGE_SERVICE_URL,
                 CurrencyConverterBean.class,
                 uriVariables);
-
-        //How to USE open feign; Required deps: spring-cloud-starter-openfeign
-
-
+        CurrencyConverterBean response = responseEntity.getBody();
+        return response;
     }
 
 }
